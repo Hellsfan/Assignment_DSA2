@@ -9,7 +9,7 @@ namespace Assignment_DSA
     internal class Department
     {
         public string depName { get; set; }
-        public Employee Manager { get; set; }
+        public string ManagerName { get; set; }
         public Department Parent { get; set; }
         public List<Employee> employees { get; set; }
         public List<Department> subDepartments { get; set; }
@@ -20,14 +20,14 @@ namespace Assignment_DSA
             employees = new List<Employee>();
             subDepartments = new List<Department>();
         }
-
-        public Department FindDepartment(Department tree, string name)
+        #region department management
+        public Department FindDepartment(Department root, string name)
         {
-            if (tree.depName.Equals(name)) return tree;
-            if (tree.subDepartments.Count == 0) return null;
-            foreach (Department department in tree.subDepartments)
+            if (root.depName.Equals(name)) return root;
+            if (root.subDepartments.Count == 0) return null;
+            foreach (Department department in root.subDepartments)
             {
-                if (department.depName == name) return department;
+                if (department.depName.Equals(name)) return department;
                 var temp = FindDepartment(department, name);
                 if (temp != null) return temp;
             }
@@ -42,37 +42,48 @@ namespace Assignment_DSA
 
         public void DeleteDepartment()
         {
-            if (this.depName == "Brazzers")
+            Department save = this;
+            foreach (Department department in save.subDepartments)
             {
-                Console.WriteLine("Cannot delete root.");
+                Parent.AddDepartment(department);
             }
-            else
-            {
-                Department save = this;
-                foreach (Department department in save.subDepartments)
-                {
-                    Parent.AddDepartment(department);
-                }
-                Parent.subDepartments.Remove(save);
-            }
+            Parent.subDepartments.Remove(save);
         }
 
         public void moveDepartment(string toDepartment, Department root)
         {
-
             var tempDep = this;
-            if (tempDep.depName.Equals(toDepartment))
+            if (tempDep.depName.Equals(root.depName))
             {
-                Console.WriteLine("cannot move root department");
+                Console.WriteLine("Cannot move root department! Press enter to continue.");
+                Console.ReadLine();
                 return;
             }
 
             var toDep = FindDepartment(root, toDepartment);
+            if (toDep == null)
+            {
+                Console.WriteLine("Desired department does not exist! Press enter to continue.");
+                Console.ReadLine();
+                return;
+            };
 
-            this.Parent.subDepartments.Remove(tempDep);
+            this.Parent.subDepartments.Remove(this);
+            tempDep.Parent = toDep;
             toDep.subDepartments.Add(tempDep);
-
         }
+
+        public int calculateEmployees(Department department)
+        {
+            if (department.subDepartments.Count == 0) return department.employees.Count;
+            int total = department.employees.Count;
+            foreach (Department dep in department.subDepartments)
+            {
+                total = total + calculateEmployees(dep);
+            }
+            return total;
+        }
+        #endregion
 
         #region employees management
         public void addEmployee(string name)
@@ -82,39 +93,35 @@ namespace Assignment_DSA
         }
         public void deleteEmployee(string name)
         {
-            if (employees.Count == 0)
-            {
-                Console.WriteLine("No employees to delete!");
-                return;
-            }
-
             foreach (var employee in employees)
             {
                 if (employee.fullName.Equals(name))
                 {
                     employees.Remove(employee);
+                    Console.WriteLine("Employee successfuly found and deleted! Press enter to continue");
+                    Console.ReadLine();
                     return;
                 }
             }
+
+            Console.WriteLine("Desired employee does not exist in this department! Press enter to continue");
+            Console.ReadLine();
         }
         public void moveEmployee(string employeeName, string toDep, Department root)
         {
+            Employee transit;
+            Department toDepartment = FindDepartment(root, toDep);
+
             foreach (var employee in employees)
             {
-                Employee transit;
-                Department toDepartment = FindDepartment(root, toDep);
-
-                if (employees.Count == 0)
-                {
-                    Console.WriteLine("There are no employees in this department to move");
-                    return;
-                }
-
                 if (employee.fullName.Equals(employeeName))
                 {
                     transit = new Employee(employeeName);
                     toDepartment.employees.Add(transit);
-                    this.employees.Remove(transit);
+                    this.deleteEmployee(transit.fullName);
+                    Console.WriteLine("Please ignore the previous message, it is a bug. Thank you. Press enter to continue");
+                    Console.ReadLine();
+                    return;
                 }
 
             }
